@@ -1,0 +1,77 @@
+---
+title: "Figures"
+author: "Sara Cifuentes"
+date: '2022-06-06'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r, include=FALSE}
+library(ComplexHeatmap)
+library(tidyverse)
+library(readr)
+library(gridtext)
+library(dplyr)
+library(base)
+```
+
+
+
+```{r, include=FALSE, echo=FALSE}
+profile_ecoli_df <- read_csv("matrix_profile_ecoli")
+
+ecoli_pangenome_annot <- read.delim("panphlan_Escherichia_coli_annot.tsv", header=FALSE)
+
+colnames(ecoli_pangenome_annot)[1] <- "Annotation"
+
+colnames(ecoli_pangenome_annot) [2] <- "Genes"
+
+ecoli_pangenome_annot <- ecoli_pangenome_annot %>% select(Annotation:Genes)
+
+nodup_ecoli_pangenome <-  ecoli_pangenome_annot %>% 
+  distinct(Annotation, .keep_all = TRUE)
+
+```
+
+
+```{r, include=FALSE, echo=FALSE}
+test1 <- profile_ecoli_df %>% 
+  head(100) %>% 
+  rowwise() %>% 
+  rename_with(~gsub("_ecoli.csv", "", .x)) %>% 
+  left_join(nodup_ecoli_pangenome) %>% 
+  relocate(Genes, .before = PR002) %>% 
+  select(-Annotation) %>% 
+  remove_rownames() %>% 
+  column_to_rownames(var = 'Genes') %>% 
+  select((1:50), -PR019, -PR040, -PR044, -PR051, -PR071, -PR125, -PR126)
+
+```
+
+## Heatmap and hierarchical clustering analysis 
+
+```{r, echo=FALSE, warning=FALSE}
+colors <- c("yellow", "navyblue")
+
+Heatmap(test1,
+        name = "presence = 1/absence = 0",
+        column_title = gt_render ("High diversity of <span style = 'color: navyblue'>*Escherichia coli*</span> strains<br>in pediatric fecal samples in rural and peri-urban areas of Quito, Ecuador"),
+        column_split = 3, 
+        column_title_gp = gpar(fontsize = 10, fontface = "bold"),
+        row_title = "Genes",
+        row_split = 3,
+        row_names_gp = gpar(fontsize = 3),
+        column_names_gp = gpar(fontsize = 5), 
+        col = colors,
+        column_dend_height = unit(1, "cm"),
+        clustering_distance_columns = "euclidean",
+        clustering_method_columns = "single", 
+        clustering_distance_rows = "euclidean",
+        heatmap_height = unit (10, "cm")) 
+
+```
